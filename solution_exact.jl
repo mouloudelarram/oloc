@@ -2,8 +2,11 @@ include("./IO_UFLP.jl");
 
 using JuMP
 using CPLEX
+using Plots
 
-
+function dist(x1, y1, x2, y2)
+    return sqrt((x1 - x2)^2 + (y1 - y2)^2)
+end
 
 function resoudre_p_centre(nom_fichier, p)
     tabX = Float64[]
@@ -38,38 +41,55 @@ function resoudre_p_centre(nom_fichier, p)
     
     return solution_x, solution_z, n, tabX, tabY
 end
-function Dessine_UFLP_solution(nom_fichier, solution_x, tabX, tabY)
-    n = size(solution_x, 1)
+
+function Dessine_UFLP(nom_fichier, n, tabX, tabY, S)
+    X = Float64[]
+    Y = Float64[]
     
-    scatter_x = Float64[]
-    scatter_y = Float64[]
-    assigned = zeros(n)  # Un tableau pour suivre quelles villes ont déjà été assignées comme antenne
+    nom_fichier_en_deux_morceaux = split(nom_fichier, ".")
+    nom_fichier_avec_pdf_a_la_fin = nom_fichier_en_deux_morceaux[1] * "_sol.pdf"
+    
+    println("Création du fichier pdf de la solution: ", nom_fichier_avec_pdf_a_la_fin)
+    
+    plot(tabX, tabY, seriestype = :scatter, legend = false)
     
     for i in 1:n
-        if solution_x[i, i] > 0.5 && assigned[i] == 0  # Si la ville i est assignée comme une antenne et n'est pas déjà assignée red
-            push!(scatter_x, tabX[i])
-            push!(scatter_y, tabY[i])
-            assigned[i] = 1  # Marquer la ville i comme assignée
-            break
+        min = 10e10
+        minj = 0
+        for j in 1:n
+            if (S[j] == 1) && (min > dist(tabX[i], tabY[i], tabX[j], tabY[j]))
+                min = dist(tabX[i], tabY[i], tabX[j], tabY[j])
+                minj = j
+            end
+        end
+        if i != minj
+            empty!(X)
+            empty!(Y)
+            push!(X, tabX[i])
+            push!(X, tabX[minj])
+            push!(Y, tabY[i])
+            push!(Y, tabY[minj])
+            plot!(X, Y, legend = false)
         end
     end
     
-    scatter(tabX, tabY, label="Villes", color="blue")
-    scatter!(scatter_x, scatter_y, label="Antennes", color="red")
-    xlabel!("Coordonnée X")
-    ylabel!("Coordonnée Y")
-    title!("Disposition des villes et des antennes")
-    
-    savefig(nom_fichier * "_solution3.png")
+    savefig(nom_fichier_avec_pdf_a_la_fin)
 end
 
-
-function Dessine_UFLP_exact(nom_fichier, p) 
+function dessin_solution_exacte(nom_fichier, p)
     solution_x, solution_z, n, tabX, tabY = resoudre_p_centre(nom_fichier, p)
-    Dessine_UFLP_solution(nom_fichier, solution_x, tabX, tabY)
+    
+    S = [0 for _ in 1:n]
+    for j in 1:n
+        if solution_x[j, j] >= 0.5
+            S[j] = 1
+        end
+    end
+    
+    Dessine_UFLP(nom_fichier, n, tabX, tabY, S)
 end
-
 
 # Exemple d'utilisation
-
-
+# nom_fichier = "nom_de_votre_fichier.flp"
+# p = 5
+# dessin_solution_exacte(nom_fichier, p)

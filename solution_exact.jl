@@ -3,6 +3,7 @@ include("./IO_UFLP.jl");
 using JuMP
 using CPLEX
 using Plots
+using Colors
 
 function dist(x1, y1, x2, y2)
     return sqrt((x1 - x2)^2 + (y1 - y2)^2)
@@ -42,7 +43,7 @@ function resoudre_p_centre(nom_fichier, p)
     return solution_x, solution_z, n, tabX, tabY
 end
 
-function Dessine_UFLP(nom_fichier, n, tabX, tabY, S)
+function Dessine_UFLP(nom_fichier, n, tabX, tabY, S, solution_x, solution_z)
     X = Float64[]
     Y = Float64[]
     
@@ -51,7 +52,13 @@ function Dessine_UFLP(nom_fichier, n, tabX, tabY, S)
     
     println("Création du fichier pdf de la solution: ", nom_fichier_avec_pdf_a_la_fin)
     
-    plot(tabX, tabY, seriestype = :scatter, legend = false)
+    plot(tabX, tabY, seriestype = :scatter, legend = false, color=:blue)
+    
+    for i in 1:n
+        if S[i] == 1
+            scatter!([tabX[i]], [tabY[i]], color=:red, legend=false)
+        end
+    end
     
     for i in 1:n
         min = 10e10
@@ -69,11 +76,23 @@ function Dessine_UFLP(nom_fichier, n, tabX, tabY, S)
             push!(X, tabX[minj])
             push!(Y, tabY[i])
             push!(Y, tabY[minj])
-            plot!(X, Y, legend = false)
+            
+            color = min == solution_z ? :orange : get_color(min, solution_z)
+            plot!(X, Y, linecolor=color, legend=false)
         end
     end
     
     savefig(nom_fichier_avec_pdf_a_la_fin)
+end
+
+function get_color(distance, max_distance)
+    norm_distance = distance / max_distance
+    dark_green = RGB(0.0, 0.5, 0.0)
+    light_green = RGB(0.5, 1.0, 0.5)
+    r = dark_green.r + norm_distance * (light_green.r - dark_green.r)
+    g = dark_green.g + norm_distance * (light_green.g - dark_green.g)
+    b = dark_green.b + norm_distance * (light_green.b - dark_green.b)
+    return RGB(r, g, b)
 end
 
 function dessin_solution_exacte(nom_fichier, p)
@@ -86,7 +105,7 @@ function dessin_solution_exacte(nom_fichier, p)
         end
     end
     
-    Dessine_UFLP(nom_fichier, n, tabX, tabY, S)
+    Dessine_UFLP(nom_fichier, n, tabX, tabY, S, solution_x, solution_z)
 end
 
 # Exemple d'utilisation

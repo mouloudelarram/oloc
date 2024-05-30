@@ -77,7 +77,7 @@ function Dessine_UFLP(nom_fichier, n, tabX, tabY, S, solution_x, solution_z)
             push!(Y, tabY[i])
             push!(Y, tabY[minj])
             
-            color = min == solution_z ? :orange : get_color(min, solution_z)
+            color = get_color(min, solution_z)
             plot!(X, Y, linecolor=color, legend=false)
         end
     end
@@ -87,12 +87,17 @@ end
 
 function get_color(distance, max_distance)
     norm_distance = distance / max_distance
-    dark_green = RGB(0.0, 0.5, 0.0)
-    light_green = RGB(0.5, 1.0, 0.5)
-    r = dark_green.r + norm_distance * (light_green.r - dark_green.r)
-    g = dark_green.g + norm_distance * (light_green.g - dark_green.g)
-    b = dark_green.b + norm_distance * (light_green.b - dark_green.b)
-    return RGB(r, g, b)
+    if distance == max_distance
+        return :red
+    elseif norm_distance > 0.75
+        return :lightblue
+    elseif norm_distance > 0.50
+        return :green
+    elseif norm_distance > 0.25
+        return :orange
+    else
+        return :pink
+    end
 end
 
 function dessin_solution_exacte(nom_fichier, p)
